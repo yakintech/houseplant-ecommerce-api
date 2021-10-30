@@ -18,9 +18,29 @@ const userSchema = new Schema({
     phone: String,
     birthDate: Date,
     password: String,
+    addDate: { type: Date, default: Date.now }
+})
+
+const productSchema = new Schema({
+    name:String,
+    description:String,
+    images:[],
+    price:Number
 })
 
 const User = mongoose.model('User', userSchema);
+const Product = mongoose.model('Product',productSchema);
+
+
+// var product = new Product({
+//     name:'Dağ Palmiyesi',
+//     description:'Beyaz Garden Saksı Latince Adı: Chamaedorea Elegans Doğrudan güneş ihtiyacı yoktur. Aydınlık veya yarı gölge bir yer gelişimi için yeterlidir. Yavaş büyüme gösterir. ',
+//     images:['https://cdn03.ciceksepeti.com/cicek/kc5990855-1/L/dag-palmiyesi-beyaz-saksili-kc5990855-1-4435d308aa874936848d49de8a9ca781.jpg'],
+//     price:80
+// })
+
+
+// product.save()
 
 // var user = new User({
 //     name:'Zeynep',
@@ -89,7 +109,39 @@ app.post("/api/user/logincontrol",(req,res)=>{
 })
 
 
+//get all products
+app.get('/api/product',(req,res)=>{
 
+    Product.find({},(err,doc) => {
+        if(!err){
+            res.json(doc);
+        }
+        else{
+            res.status(500).json(doc);
+        }
+    })
+
+})
+
+
+//get product by id
+app.get('/api/product/:id',(req,res)=>{
+
+    let id = req.params.id;
+
+    Product.findById(id,(err,doc)=>{
+        if(!err){
+            res.json(doc)
+        }
+        else{
+            res.status(500).json(err)
+        }
+    })
+
+})
+
+// Getall ile tüm ürünleri döndürür (GET METODU)
+// GetById ile dışarıdan aldığı ID ye göre ürünü verir
 
 app.listen(3000, () => {
     console.log("api çalışıyor...");
