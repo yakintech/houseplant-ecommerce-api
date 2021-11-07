@@ -128,6 +128,7 @@ app.post("/api/user/logincontrol",(req,res)=>{
 //get all products
 app.get('/api/products',(req,res)=>{
 
+    console.log("Products...");
     Product.find({},(err,doc) => {
         if(!err){
             res.json(doc);
@@ -141,7 +142,7 @@ app.get('/api/products',(req,res)=>{
 
 
 //get product by id
-app.get('/api/product/:id',(req,res)=>{
+app.get('/api/products/:id',(req,res)=>{
 
     let id = req.params.id;
 
