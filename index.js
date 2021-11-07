@@ -6,6 +6,16 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
+const port = process.env.PORT || 3000;
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Origin, X-Requested-With, Content-Type, Accept , Authorization"
+    );
+
+    next()
+  });
 
 mongoose.connect('mongodb+srv://plant_user:GYrT3SbyGIFaP8tr@cluster0.9orl8.mongodb.net/houseplant-ecommerce-db');
 
@@ -25,12 +35,18 @@ const productSchema = new Schema({
     name:String,
     description:String,
     images:[],
-    price:Number
+    price:Number,
+    category:Object
+})
+
+const categorySchema = new Schema({
+    name:String,
+    description: String
 })
 
 const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product',productSchema);
-
+const Category = mongoose.model('Category',categorySchema);
 
 // var product = new Product({
 //     name:'Dağ Palmiyesi',
@@ -110,7 +126,7 @@ app.post("/api/user/logincontrol",(req,res)=>{
 
 
 //get all products
-app.get('/api/product',(req,res)=>{
+app.get('/api/products',(req,res)=>{
 
     Product.find({},(err,doc) => {
         if(!err){
@@ -143,7 +159,7 @@ app.get('/api/product/:id',(req,res)=>{
 // Getall ile tüm ürünleri döndürür (GET METODU)
 // GetById ile dışarıdan aldığı ID ye göre ürünü verir
 
-app.listen(3000, () => {
+app.listen(port, () => {
     console.log("api çalışıyor...");
 })
 
