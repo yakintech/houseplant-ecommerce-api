@@ -10,12 +10,12 @@ const port = process.env.PORT || 3000;
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept , Authorization"
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept , Authorization"
     );
 
     next()
-  });
+});
 
 mongoose.connect('mongodb+srv://plant_user:GYrT3SbyGIFaP8tr@cluster0.9orl8.mongodb.net/houseplant-ecommerce-db');
 
@@ -32,21 +32,21 @@ const userSchema = new Schema({
 })
 
 const productSchema = new Schema({
-    name:String,
-    description:String,
-    images:[],
-    price:Number,
-    category:Object
+    name: String,
+    description: String,
+    images: [],
+    price: Number,
+    category: Object
 })
 
 const categorySchema = new Schema({
-    name:String,
+    name: String,
     description: String
 })
 
 const User = mongoose.model('User', userSchema);
-const Product = mongoose.model('Product',productSchema);
-const Category = mongoose.model('Category',categorySchema);
+const Product = mongoose.model('Product', productSchema);
+const Category = mongoose.model('Category', categorySchema);
 
 // var product = new Product({
 //     name:'Dağ Palmiyesi',
@@ -87,38 +87,71 @@ app.get('/api/user', (req, res) => {
 
 })
 
+
+//statusCode, data, error
+
+
 //üye kayıt
 app.post('/api/user', (req, res) => {
 
 
-    var user = new User({
-        name: req.body.name,
-        surname: req.body.surname,
-        email: req.body.email,
-        phone: req.body.phone,
-        birthDate: req.body.birthDate,
-        password: req.body.password
+    console.log(req.body);
+    User.findOne({ email: req.body.email }, (err, doc) => {
+
+
+
+        if (doc !== undefined && doc !== null) {
+
+            res.status(403).json({ "message": "Böyle bir kullanıcı mevcut" })
+
+        }
+        else {
+            var user = new User({
+                name: req.body.name,
+                surname: req.body.surname,
+                email: req.body.email,
+                phone: req.body.phone,
+                birthDate: req.body.birthDate,
+                password: req.body.password
+            })
+
+            user.save()
+
+            let responseData = {
+                name: user.name,
+                email: user.email,
+                surname : user.surname
+            }
+
+            res.status(201).json(responseData);
+        }
+
     })
 
-    user.save()
 
-    res.json(user);
 
 })
 
 
 //login control
-app.post("/api/user/logincontrol",(req,res)=>{
+app.post("/api/user/logincontrol", (req, res) => {
+
 
     let email = req.body.email
-    let passowrd = req.body.password
+    let password = req.body.password
 
-    User.findOne({email:email,password:passowrd},(err,doc)=>{
-        if(doc != null){
+    console.log(req.body);
+
+    User.findOne({ email: email, password: password }, (err, doc) => {
+        if (doc != null) {
+            console.log("Giriş başarılı");
+
+            console.log(doc);
             res.status(200).json(doc);
         }
-        else{
-            res.status(404).json({'msg':'User not found!'})
+        else {
+            console.log("Kullanıcı adı veya şifer yanlış");
+            res.status(404).json({ 'message': 'User not found!' })
         }
     })
 
@@ -126,14 +159,14 @@ app.post("/api/user/logincontrol",(req,res)=>{
 
 
 //get all products
-app.get('/api/products',(req,res)=>{
+app.get('/api/products', (req, res) => {
 
     console.log("Products...");
-    Product.find({},(err,doc) => {
-        if(!err){
+    Product.find({}, (err, doc) => {
+        if (!err) {
             res.json(doc);
         }
-        else{
+        else {
             res.status(500).json(doc);
         }
     })
@@ -142,20 +175,21 @@ app.get('/api/products',(req,res)=>{
 
 
 //get product by id
-app.get('/api/products/:id',(req,res)=>{
+app.get('/api/products/:id', (req, res) => {
 
     let id = req.params.id;
 
-    Product.findById(id,(err,doc)=>{
-        if(!err){
+    Product.findById(id, (err, doc) => {
+        if (!err) {
             res.json(doc)
         }
-        else{
+        else {
             res.status(500).json(err)
         }
     })
 
 })
+
 
 // Getall ile tüm ürünleri döndürür (GET METODU)
 // GetById ile dışarıdan aldığı ID ye göre ürünü verir
