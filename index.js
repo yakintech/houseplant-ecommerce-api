@@ -24,6 +24,7 @@ const { Schema } = mongoose;
 const userSchema = new Schema({
     name: String,
     surname: String,
+    address: String,
     email: String,
     phone: String,
     birthDate: Date,
@@ -44,9 +45,19 @@ const categorySchema = new Schema({
     description: String
 })
 
+const orderSchema = new Schema({
+    email: String,
+    userId : String,
+    address: String,
+    phone: String,
+    addDate: { type: Date, default: Date.now },
+    details: {}
+})
+
 const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product', productSchema);
 const Category = mongoose.model('Category', categorySchema);
+const Order = mongoose.model('Order', orderSchema)
 
 // var product = new Product({
 //     name:'Dağ Palmiyesi',
@@ -88,14 +99,10 @@ app.get('/api/user', (req, res) => {
 })
 
 
-//statusCode, data, error
-
 
 //üye kayıt
 app.post('/api/user', (req, res) => {
 
-
-    console.log(req.body);
     User.findOne({ email: req.body.email }, (err, doc) => {
 
 
@@ -109,6 +116,7 @@ app.post('/api/user', (req, res) => {
             var user = new User({
                 name: req.body.name,
                 surname: req.body.surname,
+                address: req.body.address,
                 email: req.body.email,
                 phone: req.body.phone,
                 birthDate: req.body.birthDate,
@@ -120,9 +128,12 @@ app.post('/api/user', (req, res) => {
             let responseData = {
                 name: user.name,
                 email: user.email,
-                surname : user.surname
+                surname : user.surname,
+                address: user.address,
+                id: user._id
             }
 
+            console.log(responseData)
             res.status(201).json(responseData);
         }
 
@@ -144,10 +155,18 @@ app.post("/api/user/logincontrol", (req, res) => {
 
     User.findOne({ email: email, password: password }, (err, doc) => {
         if (doc != null) {
-            console.log("Giriş başarılı");
 
-            console.log(doc);
-            res.status(200).json(doc);
+
+            let responseData = {
+                name: doc.name,
+                email: doc.email,
+                surname : doc.surname,
+                address: doc.address,
+                id: doc._id
+            }
+
+
+            res.status(200).json(responseData);
         }
         else {
             console.log("Kullanıcı adı veya şifer yanlış");
@@ -197,4 +216,7 @@ app.get('/api/products/:id', (req, res) => {
 app.listen(port, () => {
     console.log("api çalışıyor...");
 })
+
+
+
 
