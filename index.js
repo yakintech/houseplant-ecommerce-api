@@ -1,6 +1,15 @@
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose');
+var jwt = require('jsonwebtoken');
+
+const jwtKey = 'bilgeadam'
+const jwtRefreshKey = "bilgeadam2"
+const jwtExpirySeconds = 10
+const jwtExpiryRefreshSeconds = 30
+
+
+var refreshTokens = []
 
 var bodyParser = require('body-parser');
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -13,8 +22,30 @@ app.use(function (req, res, next) {
         "Access-Control-Allow-Headers",
         "Origin, X-Requested-With, Content-Type, Accept , Authorization"
     );
-
     next()
+});
+
+
+app.use(function (req, res, next) {
+
+    if (req.originalUrl == '/token' || req.originalUrl == '/api/user/logincontrol' || req.originalUrl == '/api/user') {
+        next();
+    }
+    else {
+        //token kontrolü yapacağız!
+        var userToken = req.headers.authorization;
+
+        try {
+            jwt.verify(userToken, jwtKey);
+            next()
+        }
+        catch {
+            res.status(401).json({ "message": "Yetkisiz erişim" })
+        }
+
+    }
+
+
 });
 
 mongoose.connect('mongodb+srv://plant_user:GYrT3SbyGIFaP8tr@cluster0.9orl8.mongodb.net/houseplant-ecommerce-db');
@@ -47,7 +78,7 @@ const categorySchema = new Schema({
 
 const orderSchema = new Schema({
     email: String,
-    userId : String,
+    userId: String,
     address: String,
     phone: String,
     addDate: { type: Date, default: Date.now },
@@ -59,27 +90,69 @@ const Product = mongoose.model('Product', productSchema);
 const Category = mongoose.model('Category', categorySchema);
 const Order = mongoose.model('Order', orderSchema)
 
-// var product = new Product({
-//     name:'Dağ Palmiyesi',
-//     description:'Beyaz Garden Saksı Latince Adı: Chamaedorea Elegans Doğrudan güneş ihtiyacı yoktur. Aydınlık veya yarı gölge bir yer gelişimi için yeterlidir. Yavaş büyüme gösterir. ',
-//     images:['https://cdn03.ciceksepeti.com/cicek/kc5990855-1/L/dag-palmiyesi-beyaz-saksili-kc5990855-1-4435d308aa874936848d49de8a9ca781.jpg'],
-//     price:80
-// })
+
+app.post('/token', (req, res) => {
+
+    var email = req.body.email;
+    var password = req.body.password;
+
+    User.findOne({ email: email, password: password }, (err, doc) => {
 
 
-// product.save()
+        if (doc != null) {
+            //kullanıcı adı ve şifre doğruysa arkadaşa bir token üretiyorum
 
-// var user = new User({
-//     name:'Zeynep',
-//     surname:'Sevde',
-//     email:'zeynep@hotmail.com',
-//     phone:'5554443333',
-//     birthDate:Date.now(),
-//     password:'321'
-// })
+            const token = jwt.sign({ email }, jwtKey, {
+                algorithm: 'HS256',
+                expiresIn: jwtExpirySeconds
+            })
+
+            res.status(200).json({ 'token': token });
+        }
+        else {
+
+            res.status(404).json({ 'message': 'Kullanıcı adı veya şifre hatalı! Token alamazsınız!!' })
+        }
+    })
+
+})
+
+app.post('/refreshToken', (req, res) => {
+
+    var refreshToken = req.body.refreshToken;
+    var email = req.body.email
+
+    if (refreshTokens.includes(refreshToken)) {
+
+        try {
+            jwt.verify(refreshToken, jwtExpirySeconds);
+
+            const accessToken = jwt.sign({ email }, jwtKey, {
+                algorithm: 'HS256',
+                expiresIn: jwtExpirySeconds
+            })
+
+            const refreshToken = jwt.sign({ email }, jwtRefreshKey, {
+                algorithm: 'HS256',
+                expiresIn: jwtExpiryRefreshSeconds
+            })
 
 
-// user.save()
+              res.json({ "accessToken": accessToken, "refreshToken": refreshToken });
+
+        }
+        catch {
+            res.status(401).json({ "message": "Yetkisiz erişim" })
+        }
+
+    }
+
+
+
+
+})
+
+
 
 
 //tüm kullanıcıları getirir
@@ -123,17 +196,21 @@ app.post('/api/user', (req, res) => {
                 password: req.body.password
             })
 
-            user.save()
+            user.save();
+
+            const token = jwt.sign({ email }, jwtKey, {
+                algorithm: 'HS256',
+                expiresIn: jwtExpirySeconds
+            })
 
             let responseData = {
                 name: user.name,
                 email: user.email,
-                surname : user.surname,
+                surname: user.surname,
                 address: user.address,
-                id: user._id
+                id: user._id,
+                token: token
             }
-
-            console.log(responseData)
             res.status(201).json(responseData);
         }
 
@@ -151,25 +228,40 @@ app.post("/api/user/logincontrol", (req, res) => {
     let email = req.body.email
     let password = req.body.password
 
-    console.log(req.body);
 
     User.findOne({ email: email, password: password }, (err, doc) => {
         if (doc != null) {
 
 
+            const accessToken = jwt.sign({ email }, jwtKey, {
+                algorithm: 'HS256',
+                expiresIn: jwtExpirySeconds
+            })
+
+
+            const refreshToken = jwt.sign({ email }, jwtRefreshKey, {
+                algorithm: 'HS256',
+                expiresIn: jwtExpiryRefreshSeconds
+            })
+
+
+            refreshTokens.push(refreshToken);
+
+
             let responseData = {
                 name: doc.name,
                 email: doc.email,
-                surname : doc.surname,
-                address: doc.address,
-                id: doc._id
+                surname: doc.surname,
+                address: doc.address == undefined ? "" : doc.address,
+                id: doc._id,
+                token: accessToken,
+                refreshToken: refreshToken
             }
 
 
             res.status(200).json(responseData);
         }
         else {
-            console.log("Kullanıcı adı veya şifer yanlış");
             res.status(404).json({ 'message': 'User not found!' })
         }
     })
@@ -220,3 +312,9 @@ app.listen(port, () => {
 
 
 
+//Token süresi = 5 dk
+//Refresh token süresi = 7 dk
+
+//1. senaroyo Kürşat 3. dakikada başka linke tıkladı => REFRESH TOKEN ÇALIŞIR => 5,7
+//2. senaryo Kürşat 6. dakikada başka linke tıkladı => REFRESH TOKEN ÇALIŞIR => 5,7
+//3. senaryo Kürşat 9. dakikada başka linke tıkladı => SIGNOUT
