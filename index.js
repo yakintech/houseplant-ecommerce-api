@@ -5,8 +5,8 @@ var jwt = require('jsonwebtoken');
 
 const jwtKey = 'bilgeadam'
 const jwtRefreshKey = "bilgeadam2"
-const jwtExpirySeconds = 10
-const jwtExpiryRefreshSeconds = 30
+const jwtExpirySeconds = 300000
+const jwtExpiryRefreshSeconds = 500000
 
 
 var refreshTokens = []
@@ -28,7 +28,7 @@ app.use(function (req, res, next) {
 
 app.use(function (req, res, next) {
 
-    if (req.originalUrl == '/token' || req.originalUrl == '/api/user/logincontrol' || req.originalUrl == '/api/user') {
+    if (req.originalUrl == '/token' || req.originalUrl == '/api/user/logincontrol' || req.originalUrl == '/api/user' || req.originalUrl == '/refreshToken') {
         next();
     }
     else {
@@ -119,33 +119,33 @@ app.post('/token', (req, res) => {
 
 app.post('/refreshToken', (req, res) => {
 
-    var refreshToken = req.body.refreshToken;
+
+
+    var refToken = req.body.refreshToken;
     var email = req.body.email
 
-    if (refreshTokens.includes(refreshToken)) {
+    try {
+        jwt.verify(refToken, jwtRefreshKey);
 
-        try {
-            jwt.verify(refreshToken, jwtExpirySeconds);
+        const accessToken = jwt.sign({ email }, jwtKey, {
+            algorithm: 'HS256',
+            expiresIn: jwtExpirySeconds
+        })
 
-            const accessToken = jwt.sign({ email }, jwtKey, {
-                algorithm: 'HS256',
-                expiresIn: jwtExpirySeconds
-            })
-
-            const refreshToken = jwt.sign({ email }, jwtRefreshKey, {
-                algorithm: 'HS256',
-                expiresIn: jwtExpiryRefreshSeconds
-            })
+        const refreshToken = jwt.sign({ email }, jwtRefreshKey, {
+            algorithm: 'HS256',
+            expiresIn: jwtExpiryRefreshSeconds
+        })
 
 
-              res.json({ "accessToken": accessToken, "refreshToken": refreshToken });
 
-        }
-        catch {
-            res.status(401).json({ "message": "Yetkisiz erişim" })
-        }
+        res.json({ "accessToken": accessToken, "refreshToken": refreshToken, "status": true });
 
     }
+    catch {
+        res.status(401).json({ "accessToken": "", "refreshToken": "", "status": false });
+    }
+
 
 
 
@@ -311,10 +311,18 @@ app.listen(port, () => {
 
 
 
+// API private (korunaklı) hale getirmek için token istiyorum. AccessToken benim için API doğrulamasında kullanılır. Access Token almak için kullanıcının login olması gerekli.
 
-//Token süresi = 5 dk
-//Refresh token süresi = 7 dk
 
-//1. senaroyo Kürşat 3. dakikada başka linke tıkladı => REFRESH TOKEN ÇALIŞIR => 5,7
-//2. senaryo Kürşat 6. dakikada başka linke tıkladı => REFRESH TOKEN ÇALIŞIR => 5,7
-//3. senaryo Kürşat 9. dakikada başka linke tıkladı => SIGNOUT
+//Login olduktan sonra token ı yenileyebilmen için bir de refresh token veriyorum. Bu sayede token yenileme işleminde kullanıcı adı ve şifre göndermene gerek yok. Sadece refresh token ile yenileyebilirsin.
+
+//Access Token => 5 dk ise Refresh Token => 7 dk olmak zorunda
+
+//Bu kullanıcı 1 ay kullanmazsa dışarı atarım => ETicaret
+//Bu kullanıcı 2 dk kullanmazsa dışarı atarım => Bankacılık
+
+
+//Ön tarafta API ye istek atıldığında Token ( Access Token ) geçersiz ise refresh token isteği atılır
+
+
+
