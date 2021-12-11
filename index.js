@@ -5,8 +5,8 @@ var jwt = require('jsonwebtoken');
 
 const jwtKey = 'bilgeadam'
 const jwtRefreshKey = "bilgeadam2"
-const jwtExpirySeconds = 300000
-const jwtExpiryRefreshSeconds = 500000
+const jwtExpirySeconds = 20
+const jwtExpiryRefreshSeconds = 30
 
 
 var refreshTokens = []
