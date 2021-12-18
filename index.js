@@ -14,18 +14,12 @@ var io = require('socket.io')(http);
 
 io.on('connection', (socket) => {
 
-
     console.log('user connected!!');
+    socket.on('sendermessage', (message) => {
 
-    // on
-    // emit
-
-    socket.on('getMessage', (message) => {
-
-        io.emit('sendMessage', message);
-
+        io.emit('newmessage', message);
+      
     })
-
 })
 
 
@@ -51,22 +45,24 @@ app.use(function (req, res, next) {
 
 app.use(function (req, res, next) {
 
-    if (req.originalUrl == '/token' || req.originalUrl == '/api/user/logincontrol' || req.originalUrl == '/api/user' || req.originalUrl == '/refreshToken') {
-        next();
-    }
-    else {
-        //token kontrolü yapacağız!
-        var userToken = req.headers.authorization;
+    next()
 
-        try {
-            jwt.verify(userToken, jwtKey);
-            next()
-        }
-        catch {
-            res.status(401).json({ "message": "Yetkisiz erişim" })
-        }
+    // if (req.originalUrl == '/token' || req.originalUrl == '/api/user/logincontrol' || req.originalUrl == '/api/user' || req.originalUrl == '/refreshToken') {
+    //     next();
+    // }
+    // else {
+    //     //token kontrolü yapacağız!
+    //     var userToken = req.headers.authorization;
 
-    }
+    //     try {
+    //         jwt.verify(userToken, jwtKey);
+    //         next()
+    //     }
+    //     catch {
+    //         res.status(401).json({ "message": "Yetkisiz erişim" })
+    //     }
+
+    // }
 
 
 });
@@ -112,6 +108,18 @@ const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product', productSchema);
 const Category = mongoose.model('Category', categorySchema);
 const Order = mongoose.model('Order', orderSchema)
+
+
+// app.post('/sendMessage', (req,res)=> {
+
+//     var userMessage = req.body.message;
+
+//     io.emit('newmessage', userMessage);
+
+
+//     res.send('OK!');
+
+// })
 
 
 app.post('/token', (req, res) => {
@@ -174,8 +182,6 @@ app.post('/refreshToken', (req, res) => {
 
 
 })
-
-
 
 
 //tüm kullanıcıları getirir
@@ -323,6 +329,9 @@ app.get('/api/products/:id', (req, res) => {
     })
 
 })
+
+
+
 
 
 // Getall ile tüm ürünleri döndürür (GET METODU)
