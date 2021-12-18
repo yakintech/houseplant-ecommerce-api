@@ -8,10 +8,33 @@ const jwtRefreshKey = "bilgeadam2"
 const jwtExpirySeconds = 20
 const jwtExpiryRefreshSeconds = 30
 
+var http = require('http').createServer(app)
+var io = require('socket.io')(http);
+
+
+io.on('connection', (socket) => {
+
+
+    console.log('user connected!!');
+
+    // on
+    // emit
+
+    socket.on('getMessage', (message) => {
+
+        io.emit('sendMessage', message);
+
+    })
+
+})
+
+
+
 
 var refreshTokens = []
 
 var bodyParser = require('body-parser');
+const { Socket } = require('dgram');
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
@@ -305,7 +328,7 @@ app.get('/api/products/:id', (req, res) => {
 // Getall ile tüm ürünleri döndürür (GET METODU)
 // GetById ile dışarıdan aldığı ID ye göre ürünü verir
 
-app.listen(port, () => {
+http.listen(port, () => {
     console.log("api çalışıyor...");
 })
 
